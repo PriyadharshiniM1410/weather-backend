@@ -11,74 +11,72 @@ const sequelize = new Sequelize('weatherdb', 'postgres', '1234', {
   dialect: 'postgres'
 });
 
-// Import the model
+// Import model
 const WeatherQuery = require('./models/WeatherQuery')(sequelize, DataTypes);
 
-// Sync model with DB (creates table if not exists)
+// Sync DB
 sequelize.sync()
   .then(() => console.log("✅ Database synced"))
   .catch(err => console.log("❌ Error:", err));
 
 
-// 2. ROUTE: FETCH WEATHER + STORE IN DATABASE
+
+// 2. ROUTE: FETCH WEATHER + STORE CITY, TEMP, UNIT
 app.get('/weather', async (req, res) => {
   try {
-    const city = req.query.city.trim();
+    const city = req.query.city?.trim();
+    const unit = req.query.unit?.toLowerCase();
 
+    if (!city || !unit) {
+      return res.status(400).json({
+        message: "city and unit are required"
+      });
+    }
 
-    // Validate
-    if (!city) {
-      return res.status(400).json({ message: "City is required" });
+    if (unit !== "celsius" && unit !== "fahrenheit") {
+      return res.status(400).json({
+        message: "unit must be celsius or fahrenheit"
+      });
     }
 
     const API_KEY = "c4092ca26b5f97298c5a13bd9fa3dfe2";
+    const apiUnit = unit === "fahrenheit" ? "imperial" : "metric";
 
-    // Fetch weather from OpenWeather API
     const response = await axios.get(
-      `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`
+      `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=${apiUnit}`
     );
 
     const temperature = response.data.main.temp;
 
-    // Store into DB using ORM
+    // ✅ STORE unit also
     await WeatherQuery.create({
-      city: city,
-      temperature: temperature,
+      city,
+      temperature,
+      unit,
       queriedAt: new Date()
     });
 
-    // Respond to client
     return res.json({
       city,
-      temperature
+      temperature,
+      unit
     });
 
   } catch (error) {
-    console.log(error);
     return res.status(500).json({ message: error.message });
   }
 });
 
 
 
-// 3. ROUTE: GET ALL STORED WEATHER HISTORY
+// 3. ROUTE: GET ALL STORED HISTORY (WITH UNIT)
 app.get('/history', async (req, res) => {
   try {
     const history = await WeatherQuery.findAll({
       order: [['queriedAt', 'DESC']]
     });
 
-    // Clean city names before sending
-    const cleanHistory = history.map(item => ({
-      id: item.id,
-      city: item.city.trim(),       
-      temperature: item.temperature,
-      queriedAt: item.queriedAt,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt
-    }));
-
-    return res.json(cleanHistory);
+    return res.json(history);
 
   } catch (error) {
     return res.status(500).json({ message: error.message });
