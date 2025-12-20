@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-  const WeatherQuery = sequelize.define("WeatherQuery", {
+  return sequelize.define('WeatherQuery', {
     city: {
       type: DataTypes.STRING,
       allowNull: false
@@ -14,10 +14,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     queriedAt: {
       type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW
+      allowNull: false
     }
   });
-
-  return WeatherQuery;
 };
