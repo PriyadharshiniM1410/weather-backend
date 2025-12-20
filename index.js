@@ -16,17 +16,8 @@ sequelize.authenticate()
   .catch(err => console.error('❌ DB Connection Error:', err));
 
 // MODELS 
-const WeatherQuery = sequelize.define('WeatherQuery', {
-  city: { type: DataTypes.STRING, allowNull: false },
-  temperature: { type: DataTypes.FLOAT, allowNull: false },
-  unit: { type: DataTypes.STRING, allowNull: false },
-  queriedAt: { type: DataTypes.DATE, allowNull: false }
-});
-
-const Sunrise = sequelize.define('Sunrise', {
-  sunriseTime: { type: DataTypes.STRING, allowNull: false },
-  weatherQueryId: { type: DataTypes.INTEGER, allowNull: false }
-});
+const WeatherQuery =require('./models/WeatherQuery')(sequelize,DataTypes);
+const Sunrise =require('./models/Sunrise')(sequelize,DataTypes);
 
 // Relations
 WeatherQuery.hasOne(Sunrise, { foreignKey: 'weatherQueryId' });
